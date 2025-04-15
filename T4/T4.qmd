@@ -128,7 +128,7 @@ We've imported it as a dataframe with the following columns:
 
 -   **s3:** The number of private car trips with three or more people per vehicle.
 
--   **sb:** The number of bike share trips.
+-   **sb:** The number of school bus trips.
 
 -   **ta:** The number of transit trips with car as an access or egress mode (e.g. park-and-ride trips)
 
