@@ -93,7 +93,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#load-link-volumes" id="toc-load-link-volumes" class="nav-link" data-scroll-target="#load-link-volumes">Load link volumes</a></li>
   <li><a href="#compare-link-volumes" id="toc-compare-link-volumes" class="nav-link" data-scroll-target="#compare-link-volumes">Compare link volumes</a></li>
   </ul></li>
-  <li><a href="#transit-ridership" id="toc-transit-ridership" class="nav-link" data-scroll-target="#transit-ridership">Transit ridership</a></li>
+  <li><a href="#transit-ridership" id="toc-transit-ridership" class="nav-link" data-scroll-target="#transit-ridership">Transit ridership</a>
+  <ul class="collapse">
+  <li><a href="#export-transit-stops" id="toc-export-transit-stops" class="nav-link" data-scroll-target="#export-transit-stops">Export transit stops</a></li>
+  <li><a href="#load-transit-stop-locations" id="toc-load-transit-stop-locations" class="nav-link" data-scroll-target="#load-transit-stop-locations">Load transit stop locations</a></li>
+  <li><a href="#load-boardingalighting-data" id="toc-load-boardingalighting-data" class="nav-link" data-scroll-target="#load-boardingalighting-data">Load boarding/alighting data</a></li>
+  <li><a href="#compare-ridership" id="toc-compare-ridership" class="nav-link" data-scroll-target="#compare-ridership">Compare ridership</a></li>
+  </ul></li>
   </ul>
 </nav>
 </div>
@@ -131,11 +137,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(here)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(leaflet)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(maptiles)</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyterra)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tigris)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(maptiles)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyterra)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tigris)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="run-model" class="level2">
@@ -395,7 +400,221 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="transit-ridership" class="level2">
 <h2 class="anchored" data-anchor-id="transit-ridership">Transit ridership</h2>
-<p>Coming soon.</p>
+<p>We will also evaluate changes in ridership at the stop level.</p>
+<section id="export-transit-stops" class="level3">
+<h3 class="anchored" data-anchor-id="export-transit-stops">Export transit stops</h3>
+<p>Open the transit routes layer for your alternative (in the baseline scenario, it’s called tdm23_1_0_2019_rs.rts) in TransCAD. Make the stops layer visible and export it as a geojson as you did for the highway layer.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="images/export-geojson-stops.gif" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="load-transit-stop-locations" class="level3">
+<h3 class="anchored" data-anchor-id="load-transit-stop-locations">Load transit stop locations</h3>
+<p>Now you can read in the stop locations into R.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>stop_locs <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">"model"</span>,</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                  <span class="st">"inputs"</span>,</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>                  <span class="st">"networks"</span>,</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>                  <span class="st">"tdm23.1.0"</span>,</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>                  <span class="st">"2019"</span>,</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>                  <span class="st">"stops.geojson"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_read</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>And let’s take a look at those stop locations.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>base_map <span class="ot">&lt;-</span> <span class="fu">get_tiles</span>(stop_locs,</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>                      <span class="at">provider =</span> <span class="st">"CartoDB.Positron"</span>,</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>                      <span class="at">zoom =</span> <span class="dv">8</span>,</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>                      <span class="at">crop =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(stop_locs) <span class="sc">+</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_spatraster_rgb</span>(<span class="at">data =</span> base_map) <span class="sc">+</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">size =</span> <span class="dv">1</span>, <span class="at">color =</span> <span class="st">"orange"</span>) <span class="sc">+</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_void</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="T5_files/figure-html/unnamed-chunk-18-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="load-boardingalighting-data" class="level3">
+<h3 class="anchored" data-anchor-id="load-boardingalighting-data">Load boarding/alighting data</h3>
+<p>In this example, I’m focusing on the AM peak and on those who walk to and from their transit stops (i.e.&nbsp;I’m ignoring those who use park and ride lots).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>base_onoff <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">"model"</span>,</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                   <span class="st">"outputs"</span>,</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                   <span class="st">"Base"</span>,</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>                   <span class="st">"_assignment"</span>,</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>                   <span class="st">"onoff_tw_am.csv"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read_csv</span>(<span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(STOP, On, Off) <span class="sc">|&gt;</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">base_on =</span> On,</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>         <span class="at">base_off =</span> Off,</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>         <span class="at">ID =</span> STOP)</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>alt_onoff <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">"model"</span>,</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>                   <span class="st">"outputs"</span>,</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>                   <span class="st">"Alternative"</span>,</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>                   <span class="st">"_assignment"</span>,</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>                   <span class="st">"onoff_tw_am.csv"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read_csv</span>(<span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(STOP, On, Off) <span class="sc">|&gt;</span></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">alt_on =</span> On,</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>         <span class="at">alt_off =</span> Off,</span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>         <span class="at">ID =</span> STOP)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="compare-ridership" class="level3">
+<h3 class="anchored" data-anchor-id="compare-ridership">Compare ridership</h3>
+<p>Now I can join those to their locations and make some comparisons. What are the ten transit stops with the biggest changes in ridership?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>stop_diff <span class="ot">&lt;-</span> stop_locs <span class="sc">|&gt;</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">inner_join</span>(base_onoff) <span class="sc">|&gt;</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(alt_onoff) <span class="sc">|&gt;</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">base_total =</span> base_on <span class="sc">+</span> base_off,</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>         <span class="at">alt_total =</span> alt_on <span class="sc">+</span> alt_off,</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>         <span class="at">diff =</span> alt_total <span class="sc">-</span> base_total) <span class="sc">|&gt;</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">abs_diff =</span> <span class="fu">abs</span>(diff)) <span class="sc">|&gt;</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="sc">-</span>abs_diff) <span class="sc">|&gt;</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">inc_dec =</span> <span class="fu">ifelse</span>(diff <span class="sc">&lt;</span> <span class="dv">0</span>, <span class="st">"Decrease"</span>, <span class="st">"Increase"</span>))</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>stop_diff <span class="sc">|&gt;</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_drop_geometry</span>() <span class="sc">|&gt;</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(ID, diff) <span class="sc">|&gt;</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="at">n =</span> <span class="dv">20</span>) <span class="sc">|&gt;</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: right;">ID</th>
+<th style="text-align: right;">diff</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">211631</td>
+<td style="text-align: right;">-553.49350</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">211646</td>
+<td style="text-align: right;">332.91760</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">273705</td>
+<td style="text-align: right;">322.39490</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">273526</td>
+<td style="text-align: right;">-278.40820</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">273792</td>
+<td style="text-align: right;">-233.82211</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">273605</td>
+<td style="text-align: right;">-228.14690</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">273793</td>
+<td style="text-align: right;">218.34815</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">211647</td>
+<td style="text-align: right;">193.08940</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">273515</td>
+<td style="text-align: right;">-130.18300</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">273700</td>
+<td style="text-align: right;">127.98830</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">273693</td>
+<td style="text-align: right;">123.59944</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">273594</td>
+<td style="text-align: right;">-119.47960</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">273462</td>
+<td style="text-align: right;">112.80430</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">273799</td>
+<td style="text-align: right;">-107.55530</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">273456</td>
+<td style="text-align: right;">104.21321</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">212224</td>
+<td style="text-align: right;">98.86720</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">273239</td>
+<td style="text-align: right;">93.06498</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">274115</td>
+<td style="text-align: right;">91.13020</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">211635</td>
+<td style="text-align: right;">85.62100</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">274109</td>
+<td style="text-align: right;">84.07744</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>It looks like there are 15 stops with changes of more than 100 boardings and alightings in the AM peak. Let’s see where they area.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>big_stop_diffs <span class="ot">&lt;-</span> stop_diff <span class="sc">|&gt;</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(abs_diff <span class="sc">&gt;</span> <span class="dv">100</span>)</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>base_map <span class="ot">&lt;-</span> <span class="fu">get_tiles</span>(big_stop_diffs,</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>                      <span class="at">provider =</span> <span class="st">"CartoDB.Positron"</span>,</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>                      <span class="at">zoom =</span> <span class="dv">13</span>,</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>                      <span class="at">crop =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(big_stop_diffs) <span class="sc">+</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_spatraster_rgb</span>(<span class="at">data =</span> base_map) <span class="sc">+</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="fu">aes</span>(<span class="at">size =</span> abs_diff,</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>              <span class="at">color =</span> inc_dec),</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>          <span class="at">alpha =</span> <span class="fl">0.3</span>) <span class="sc">+</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_size</span>(<span class="at">name =</span> <span class="st">"Magnitude of change"</span>) <span class="sc">+</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">name =</span> <span class="st">"Direction of change"</span>,</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>                     <span class="at">values =</span> <span class="fu">c</span>(<span class="st">"red"</span>, <span class="st">"blue"</span>),</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>                     <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Decrease"</span>,</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"Increase"</span>)) <span class="sc">+</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_void</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="T5_files/figure-html/unnamed-chunk-21-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
 </section>
 
 </main>

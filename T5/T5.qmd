@@ -20,7 +20,6 @@ This analysis uses the following packages:
 library(tidyverse)
 library(sf)
 library(here)
-library(leaflet)
 library(maptiles)
 library(tidyterra)
 library(knitr)
@@ -293,4 +292,123 @@ What do you notice?
 
 ## Transit ridership
 
-Coming soon.
+We will also evaluate changes in ridership at the stop level.
+
+### Export transit stops
+
+Open the transit routes layer for your alternative (in the baseline scenario, it's called tdm23_1_0_2019_rs.rts) in TransCAD. Make the stops layer visible and export it as a geojson as you did for the highway layer.
+
+```{r, echo=FALSE}
+
+here("T5",
+     "images",
+     "export-geojson-stops.gif") |>
+  knitr::include_graphics()
+```
+
+### Load transit stop locations
+
+Now you can read in the stop locations into R.
+
+```{r, message=FALSE, results='hide'}
+
+stop_locs <- here("model",
+                  "inputs",
+                  "networks",
+                  "tdm23.1.0",
+                  "2019",
+                  "stops.geojson") |>
+  st_read()
+```
+
+And let's take a look at those stop locations.
+
+```{r}
+
+base_map <- get_tiles(stop_locs,
+                      provider = "CartoDB.Positron",
+                      zoom = 8,
+                      crop = TRUE)
+
+ggplot(stop_locs) +
+  geom_spatraster_rgb(data = base_map) +
+  geom_sf(size = 1, color = "orange") +
+  theme_void()
+```
+
+### Load boarding/alighting data
+
+In this example, I'm focusing on the AM peak and on those who walk to and from their transit stops (i.e. I'm ignoring those who use park and ride lots).
+
+```{r}
+
+base_onoff <- here("model",
+                   "outputs",
+                   "Base",
+                   "_assignment",
+                   "onoff_tw_am.csv") |>
+  read_csv(show_col_types = FALSE) |>
+  select(STOP, On, Off) |>
+  rename(base_on = On,
+         base_off = Off,
+         ID = STOP)
+
+alt_onoff <- here("model",
+                   "outputs",
+                   "Alternative",
+                   "_assignment",
+                   "onoff_tw_am.csv") |>
+  read_csv(show_col_types = FALSE) |>
+  select(STOP, On, Off) |>
+  rename(alt_on = On,
+         alt_off = Off,
+         ID = STOP)
+```
+
+### Compare ridership
+
+Now I can join those to their locations and make some comparisons. What are the ten transit stops with the biggest changes in ridership?
+
+```{r, message=FALSE}
+
+stop_diff <- stop_locs |>
+  inner_join(base_onoff) |>
+  left_join(alt_onoff) |>
+  mutate(base_total = base_on + base_off,
+         alt_total = alt_on + alt_off,
+         diff = alt_total - base_total) |>
+  mutate(abs_diff = abs(diff)) |>
+  arrange(-abs_diff) |>
+  mutate(inc_dec = ifelse(diff < 0, "Decrease", "Increase"))
+
+stop_diff |>
+  st_drop_geometry() |>
+  select(ID, diff) |>
+  head(n = 20) |>
+  kable()
+```
+
+It looks like there are 15 stops with changes of more than 100 boardings and alightings in the AM peak. Let's see where they area.
+
+```{r}
+
+big_stop_diffs <- stop_diff |>
+  filter(abs_diff > 100)
+
+base_map <- get_tiles(big_stop_diffs,
+                      provider = "CartoDB.Positron",
+                      zoom = 13,
+                      crop = TRUE)
+
+ggplot(big_stop_diffs) +
+  geom_spatraster_rgb(data = base_map) +
+  geom_sf(aes(size = abs_diff,
+              color = inc_dec),
+          alpha = 0.3) +
+  scale_size(name = "Magnitude of change") +
+  scale_color_manual(name = "Direction of change",
+                     values = c("red", "blue"),
+                     labels = c("Decrease",
+                                "Increase")) +
+  theme_void()
+```
